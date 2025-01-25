@@ -8,12 +8,12 @@ class Topsis:
     """
 
     def __init__(
-        self, 
+        self,
         n_alternatives: int,
         n_criteria: int,
         weights: np.ndarray,
         decision_matrices: np.ndarray,
-        is_benefit_criteria: Optional[np.ndarray] = None
+        is_benefit_criteria: Optional[np.ndarray] = None,
     ):
         """
         Initialize the TOPSIS object.
@@ -24,7 +24,7 @@ class Topsis:
             weights (ndarray): A 1D array of length n_criteria representing the weights of each criterion.
             decision_matrices (ndarray): A 3D tensor of shape (n_experts, n_alternatives, n_criteria)
                 representing the decision matrices from multiple experts.
-            is_benefit_criteria: (Optional[ndarray]): A boolean array of shape (n_criteria,) indicating whether each 
+            is_benefit_criteria: (Optional[ndarray]): A boolean array of shape (n_criteria,) indicating whether each
                 criterion is a "benefit" criterion (True) or a "cost" criterion (False). If None, all criteria are
                 assumed to be benefit criteria. Defaults to None.
         Returns:
@@ -32,6 +32,10 @@ class Topsis:
         """
         self.n_alternatives = n_alternatives
         self.n_criteria = n_criteria
+
+        if np.any(weights <= 0):
+            raise ValueError("Error: All weight values must be positive.")
+
         self.weights = weights / weights.sum()  # Normalize the weight vector.
         self.decision_matrices = decision_matrices
 
@@ -42,8 +46,10 @@ class Topsis:
 
         if len(self.weights) != self.n_criteria:
             raise ValueError("The length of weights must match n_criteria.")
-        if self.decision_matrices.shape[1] != self.n_alternatives or \
-           self.decision_matrices.shape[2] != self.n_criteria:
+        if (
+            self.decision_matrices.shape[1] != self.n_alternatives
+            or self.decision_matrices.shape[2] != self.n_criteria
+        ):
             raise ValueError(
                 "decision_matrices must have shape (n_experts, n_alternatives, n_criteria)."
             )
@@ -55,7 +61,7 @@ class Topsis:
         Aggregate the decision matrices from multiple experts into a single decision matrix.
 
         Returns:
-            ndarray: A 2D array of shape (n_alternatives, n_criteria) representing 
+            ndarray: A 2D array of shape (n_alternatives, n_criteria) representing
                 the aggregated decision matrix.
         """
         return np.mean(self.decision_matrices, axis=0)
@@ -72,8 +78,8 @@ class Topsis:
                 normalized by its Euclidean norm.
         """
         # Compute the norm for each criterion (column).
-        norm = np.sqrt(np.sum(decision_matrix ** 2, axis=0))
-        
+        norm = np.sqrt(np.sum(decision_matrix**2, axis=0))
+
         # To avoid division by zero replace it with multiplicative identity.
         norm[norm == 0] = 1.0
 
@@ -93,7 +99,9 @@ class Topsis:
         # Perform element-wise multiplication after broadcasting.
         return normalized_matrix * self.weights
 
-    def _determine_ideal_solutions(self, weighted_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _determine_ideal_solutions(
+        self, weighted_matrix: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Determine the ideal and negative-ideal solution vectors.
 
@@ -120,10 +128,7 @@ class Topsis:
         return ideal, negative_ideal
 
     def _calculate_distances_to_ideals(
-        self,
-        weighted_matrix: np.ndarray,
-        ideal: np.ndarray,
-        negative_ideal: np.ndarray
+        self, weighted_matrix: np.ndarray, ideal: np.ndarray, negative_ideal: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute the Euclidean distance of each alternative from the ideal and
@@ -133,20 +138,20 @@ class Topsis:
             weighted_matrix (ndarray): A 2D array of shape (n_alternatives, n_criteria).
             ideal (ndarray): A 1D array of length n_criteria (best solution).
             negative_ideal (ndarray): A 1D array of length n_criteria (worst solution).
-            
+
         Returns:
             Tuple[ndarray, ndarray]: The first element is a 1D array of length n_alternatives containing
             the distance to the ideal solution. The second element is a 1D array of length n_alternatives
             containing distance to the negative-ideal solution.
         """
         dist_to_ideal = np.sqrt(np.sum((weighted_matrix - ideal) ** 2, axis=1))
-        dist_to_negative_ideal = np.sqrt(np.sum((weighted_matrix - negative_ideal) ** 2, axis=1))
+        dist_to_negative_ideal = np.sqrt(
+            np.sum((weighted_matrix - negative_ideal) ** 2, axis=1)
+        )
         return dist_to_ideal, dist_to_negative_ideal
 
     def _calculate_closeness_scores(
-        self,
-        dist_to_ideal: np.ndarray,
-        dist_to_negative_ideal: np.ndarray
+        self, dist_to_ideal: np.ndarray, dist_to_negative_ideal: np.ndarray
     ) -> np.ndarray:
         """
         Calculate the relative closeness of each alternative to the ideal solution.
@@ -163,8 +168,10 @@ class Topsis:
             ndarray: A 1D array of shape (n_alternatives,) containing the closeness score for each alternative.
         """
         if np.any((dist_to_ideal == 0) & (dist_to_negative_ideal == 0)):
-            raise ValueError("Error: Zero denominator detected in relative closeness calculation for one or more alternatives.")
-        
+            raise ValueError(
+                "Error: Zero denominator detected in relative closeness calculation for one or more alternatives."
+            )
+
         return dist_to_negative_ideal / (dist_to_ideal + dist_to_negative_ideal)
 
     def rank_alternatives(self) -> np.ndarray:
