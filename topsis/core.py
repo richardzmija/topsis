@@ -162,7 +162,7 @@ class Topsis:
         Returns:
             ndarray: A 1D array of shape (n_alternatives,) containing the closeness score for each alternative.
         """
-        if np.any(dist_to_ideal == 0 & dist_to_negative_ideal == 0):
+        if np.any((dist_to_ideal == 0) & (dist_to_negative_ideal == 0)):
             raise ValueError("Error: Zero denominator detected in relative closeness calculation for one or more alternatives.")
         
         return dist_to_negative_ideal / (dist_to_ideal + dist_to_negative_ideal)
