@@ -5,7 +5,7 @@ description = "Python package that implements the TOPSIS algorithm, a multi-crit
 authors = [
     {name = "richardzmija",email = "165653574+richardzmija@users.noreply.github.com"}
 ]
-license = {text = "MIT"}
+license = "MIT"
 readme = "README.md"
 requires-python = "^3.12"
 dependencies = [
